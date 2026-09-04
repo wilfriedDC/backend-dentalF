@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id            Int       @id @default(autoincrement())
+  nom           String
+  prenom        String
+  sexe          String?
+  dateNaissance DateTime?
+  adresse       String?
+  telephone     String
+  email         String?
+
+  consultations Consultation[]
+  rendezVous    RendezVous[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Consultation {
+  id Int @id @default(autoincrement())
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  dateConsultation DateTime @default(now())
+
+  motifConsultation String
+  observation       String?
+
+  prochainRdvDate  DateTime?
+  prochainRdvHeure String?
+
+  actes     Acte[]
+  paiements Paiement[]
+
+  odontogrammes Odontogramme[]
+
+  facture Facture?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Acte {
+  id Int @id @default(autoincrement())
+
+  consultationId Int
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+
+  numeroDent  String?
+  nomActe     String
+  description String?
+
+  prix Float
+}
+
+model Paiement {
+  id Int @id @default(autoincrement())
+
+  consultationId Int
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+
+  datePaiement DateTime @default(now())
+  montant      Float
+
+  modePaiement String?
+}
+
+model RendezVous {
+  id Int @id @default(autoincrement())
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id])
+
+  date  DateTime
+  heure String
+
+  motif  String?
+  statut String  @default("PLANIFIE")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Odontogramme {
+  id Int @id @default(autoincrement())
+
+  consultationId Int
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+
+  numeroDent  String
+  statut      String
+  face        String?
+  commentaire String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Facture {
+  id Int @id @default(autoincrement())
+
+  numero String @unique
+
+  consultationId Int          @unique
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+
+  lignes FactureLigne[]
+
+  total     Int
+  remise    Int @default(0)
+  montantDu Int
+
+  statut String @default("NON_PAYEE")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FactureLigne {
+  id Int @id @default(autoincrement())
+
+  factureId Int
+  facture   Facture @relation(fields: [factureId], references: [id])
+
+  nomActe    String
+  numeroDent String?
+  prix       Int
+  quantite   Int     @default(1)
+
+  createdAt DateTime @default(now())
+}
+
+model Cabinet {
+  id Int @id @default(autoincrement())
+
+  nom       String
+  adresse   String?
+  telephone String?
+  email     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  praticiens Praticien[]
+}
+
+model Praticien {
+  id Int @id @default(autoincrement())
+
+  cabinetId Int
+  cabinet   Cabinet @relation(fields: [cabinetId], references: [id])
+
+  nomComplet String
+  numeroRPPS String?
+  specialite String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

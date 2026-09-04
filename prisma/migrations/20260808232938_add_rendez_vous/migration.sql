@@ -1,0 +1,12 @@
+-- CreateTable
+CREATE TABLE "RendezVous" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "patientId" INTEGER NOT NULL,
+    "date" DATETIME NOT NULL,
+    "heure" TEXT NOT NULL,
+    "motif" TEXT,
+    "statut" TEXT NOT NULL DEFAULT 'PLANIFIE',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "RendezVous_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);

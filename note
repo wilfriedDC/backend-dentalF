@@ -1,0 +1,11 @@
+src/
+├── database/
+│   └── prisma.ts
+├── controllers/
+│   └── patient.controller.ts
+├── services/
+│   └── patient.service.ts
+├── routes/
+│   └── patient.routes.ts
+├── app.ts
+└── server.ts
