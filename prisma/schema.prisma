@@ -103,6 +103,8 @@ model Odontogramme {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([consultationId, numeroDent])
 }
 
 model Facture {

@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const odontogramme_controller_1 = require("../controllers/odontogramme.controller");
+const router = (0, express_1.Router)();
+router.post("/", odontogramme_controller_1.create);
+router.get("/consultation/:consultationId", odontogramme_controller_1.getByConsultation);
+router.get("/:id", odontogramme_controller_1.getOne);
+router.put("/:id", odontogramme_controller_1.update);
+router.delete("/:id", odontogramme_controller_1.remove);
+exports.default = router;

@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import * as patientService from "../services/patient.service";
 import { createPatientSchema } from "../validations/patient.validation";
 
+import * as odontogrammeService from "../services/odontogramme.service";
+import { upsertToothForPatientSchema } from "../validations/odontogramme.validation";
+
 
 // CREATE
 export const create = async (
@@ -129,6 +132,66 @@ export const remove = async (
 
     res.status(500).json({
       message: "Erreur suppression patient",
+    });
+  }
+};
+
+
+// GET /patients/:id/odontogramme
+// Renvoie l'état actuel du schéma dentaire du patient (une ligne par dent
+// annotée, correspondant à la consultation la plus récente pour cette dent).
+export const getOdontogramme = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const entries = await odontogrammeService.getByPatient(
+      Number(req.params.id)
+    );
+
+    res.json(entries);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Erreur récupération odontogramme",
+    });
+  }
+};
+
+
+// PUT /patients/:id/odontogramme/:numeroDent
+// Corps attendu : { consultationId: number, statut: string, commentaire?: string }
+export const upsertOdontogrammeTooth = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const data = upsertToothForPatientSchema.parse(req.body);
+
+    const entry = await odontogrammeService.upsertToothForConsultation({
+      consultationId: data.consultationId,
+      numeroDent: String(req.params.numeroDent),
+      statut: data.statut,
+      commentaire: data.commentaire,
+    });
+
+    res.json(entry);
+
+  } catch (error) {
+
+    if (error instanceof Error) {
+      res.status(400).json({
+        message: error.message,
+      });
+
+      return;
+    }
+
+    res.status(500).json({
+      message: "Erreur enregistrement de la dent",
     });
   }
 };

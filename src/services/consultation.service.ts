@@ -1,4 +1,14 @@
 import { prisma } from "../database/prisma";
+
+// Type d'un acte individuel, utilisé aussi bien pour "acte" (singulier,
+// rétrocompatibilité) que pour "actes" (tableau, panier multi-actes).
+interface ActeInput {
+  numeroDent?: string | null;
+  nomActe: string;
+  description?: string | null;
+  prix: number;
+}
+
 export const createConsultation = async (data: {
   patientId: number;
   motifConsultation: string;
@@ -6,12 +16,11 @@ export const createConsultation = async (data: {
   prochainRdvDate?: string | null;
   prochainRdvHeure?: string | null;
 
-  acte?: {
-    numeroDent?: string | null;
-    nomActe: string;
-    description?: string | null;
-    prix: number;
-  } | null;
+  // Rétrocompatibilité : un seul acte.
+  acte?: ActeInput | null;
+
+  // Nouveau : plusieurs actes (panier), créés tous dans la même transaction.
+  actes?: ActeInput[];
 
   paiement?: {
     montant: number;
@@ -40,25 +49,23 @@ export const createConsultation = async (data: {
     });
 
 
-    //  Créer l'acte
-    if (data.acte) {
+    //  Rassembler tous les actes à créer : le tableau "actes" (nouveau) et/ou
+    //  l'acte singulier "acte" (ancien format), pour ne rien casser côté
+    //  clients qui envoient encore l'ancien format.
+    const allActes: ActeInput[] = [
+      ...(data.actes ?? []),
+      ...(data.acte ? [data.acte] : []),
+    ];
 
-      await tx.acte.create({
-        data: {
+    if (allActes.length > 0) {
+      await tx.acte.createMany({
+        data: allActes.map((acte) => ({
           consultationId: consultation.id,
-
-          numeroDent:
-            data.acte.numeroDent ?? null,
-
-          nomActe:
-            data.acte.nomActe,
-
-          description:
-            data.acte.description ?? null,
-
-          prix:
-            data.acte.prix,
-        },
+          numeroDent: acte.numeroDent ?? null,
+          nomActe: acte.nomActe,
+          description: acte.description ?? null,
+          prix: acte.prix,
+        })),
       });
     }
 
@@ -258,6 +265,42 @@ export const getFullConsultation = async (id: number) => {
       paiements: true,
 
       odontogrammes: true,
+    },
+  });
+};
+
+export const addPaiement = async (
+  consultationId: number,
+  data: {
+    montant: number;
+    modePaiement?: string | null;
+  }
+) => {
+  // Vérifie que la consultation existe avant d'y attacher un paiement
+  const consultation = await prisma.consultation.findUnique({
+    where: { id: consultationId },
+  });
+
+  if (!consultation) {
+    return null;
+  }
+
+  await prisma.paiement.create({
+    data: {
+      consultationId,
+      montant: data.montant,
+      modePaiement: data.modePaiement ?? null,
+    },
+  });
+
+  // Retourne la consultation à jour, avec tous ses paiements — c'est ce
+  // que le frontend affiche ensuite dans la facture.
+  return await prisma.consultation.findUnique({
+    where: { id: consultationId },
+    include: {
+      patient: true,
+      actes: true,
+      paiements: true,
     },
   });
 };

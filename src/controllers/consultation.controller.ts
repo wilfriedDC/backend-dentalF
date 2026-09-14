@@ -200,3 +200,48 @@ export const getFull = async (
     });
   }
 };
+
+// À ajouter dans consultation.controller.ts, à côté de update
+
+export const addPaiement = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+
+    const montant = Number(req.body.montant);
+
+    if (!montant || montant <= 0) {
+      res.status(400).json({
+        message: "Montant invalide.",
+      });
+      return;
+    }
+
+    const consultation =
+      await consultationService.addPaiement(
+        Number(req.params.id),
+        {
+          montant,
+          modePaiement: req.body.modePaiement ?? null,
+        }
+      );
+
+    if (!consultation) {
+      res.status(404).json({
+        message: "Consultation introuvable",
+      });
+      return;
+    }
+
+    res.status(201).json(consultation);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      message: "Erreur enregistrement paiement",
+    });
+  }
+};
