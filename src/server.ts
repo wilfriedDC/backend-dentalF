@@ -1,18 +1,24 @@
 import app from "./app";
 import path from "path";
+import fs from "fs";
 import express from "express";
 
-const frontendPath = process.env.FRONTEND_DIST_PATH || path.join(__dirname, "../../frontend-dist");
+// En production, Electron fournit FRONTEND_DIST_PATH.
+// En développement, on retombe sur frontend/dist.
+const frontendPath =
+  process.env.FRONTEND_DIST_PATH || path.join(__dirname, "../../frontend/dist");
 
-// ... tes routes API existantes (déjà définies dans "./app" via app.use("/api", ...) etc.)
-// doivent être enregistrées AVANT le static + catch-all ci-dessous, sinon
-// le catch-all intercepterait aussi les appels API.
+console.log(
+  "frontendPath:",
+  frontendPath,
+  "| index.html existe ?",
+  fs.existsSync(path.join(frontendPath, "index.html"))
+);
 
 app.use(express.static(frontendPath));
 
-// Catch-all pour le routing React (React Router etc.)
-// Express 5 exige un paramètre nommé, "*" seul n'est plus valide.
-app.get("/*splat", (req, res) => {
+// Express 5 : "/{*splat}" couvre aussi "/" (contrairement à "/*splat").
+app.get("/{*splat}", (_req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
 
@@ -25,9 +31,6 @@ export function startServer(port: number) {
   });
 }
 
-// En dev classique (npm run dev / tsx src/server.ts exécuté directement),
-// on démarre tout de suite. Electron, lui, importera juste startServer()
-// sans jamais exécuter ce bloc (voir explication plus bas).
 if (require.main === module) {
   startServer(3000);
 }
